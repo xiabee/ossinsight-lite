@@ -12,7 +12,7 @@ jobs:
 
     steps:
       - name: main
-        uses: hooopo/repo-track-pipeline@main
+        uses: xiabee/repo-track-pipeline@main
         with:
           access-token: ${{ secrets.ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
           database-url: ${{ secrets.DATABASE_URL }}/${{ secrets.GITHUB_REPO_DATABASE || 'github_repos' }}
@@ -24,7 +24,7 @@ jobs:
 
     steps:
       - name: main
-        uses: hooopo/oh-my-github-pipeline@main
+        uses: xiabee/oh-my-github-pipeline@main
         with:
           access-token: ${{ secrets.ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
           database-url: ${{ secrets.DATABASE_URL }}/${{ secrets.GITHUB_PERSONAL_DATABASE || 'github_personal' }}
