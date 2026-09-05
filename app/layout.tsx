@@ -28,7 +28,7 @@ export default async function RootLayout ({
         'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
       })(window,document,'script','dataLayer','GTM-PRPSXZS');`}</Script>
       <link rel="icon" type="image/png" href={currentUser!.avatar_url} />
-      <title>{`${currentUser!.login}'s Dashboard | OSSInsight lite`}</title>
+      <title>{`${currentUser!.login}'s Developer Analytics`}</title>
     </head>
     <body>
     <noscript>

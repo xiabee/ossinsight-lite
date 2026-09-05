@@ -1,24 +1,31 @@
-name: "Sync upstream"
+name: "Sync upstream (via PR)"
+
+# Periodically checks the upstream repo for changes and opens a PR instead of
+# pushing directly to main, so personal customizations can never be
+# overwritten by automation. Merge the PR manually after reviewing.
 
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "23 2 * * 1" # weekly, Monday 10:23 Asia/Shanghai
   workflow_dispatch:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   repo-sync:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-        with:
-          persist-credentials: false
-      - name: repo-sync
+      - name: Sync upstream into a PR branch
         uses: repo-sync/github-sync@v2
         with:
-          source_repo: "pingcap/ossinsight-lite"
+          source_repo: "pingcap/pingcap.github.io"
           source_branch: "main"
-          destination_branch: "main"
-          github_token: ${{ secrets.SYNC_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+          destination_branch: "upstream-sync"
+          pr_branch_name: "upstream-sync"
+          pr_title: "Upstream updates"
+          pr_body: |
+            Automated upstream sync. Review and merge to adopt upstream changes;
+            conflicts are expected where this fork has been personalized.
+          github_token: ${{ secrets.GITHUB_TOKEN }}
