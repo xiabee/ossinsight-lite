@@ -21,13 +21,13 @@ const widgetsManifestLoader: LoaderDefinitionFunction = function (content, map, 
 
   function normalize (name: string) {
     return name
-      .replace(/\//g, '__')
+      .replace(/[\\/]/g, '__')
       .replace(/-/g, '_');
   }
 
   const head = Object
     .entries(widgets)
-    .map(([key, widget]) => `import * as ${normalize(key)} from ${JSON.stringify(widget.source)};\n`)
+    .map(([key, widget]) => `import * as ${normalize(key)} from ${JSON.stringify(widget.source.replace(/\\/g, '/'))};\n`)
     .join('\n');
 
   let body = 'const widgets = {};\n\n';

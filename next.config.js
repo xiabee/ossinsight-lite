@@ -6,7 +6,7 @@ const nextConfig = {
   webpack: (config, context) => {
 
     config.module.rules.push({
-      test: /\/widgets-manifest\.ts$/,
+      test: /[\\/]widgets-manifest\.ts$/,
       use: [
         context.defaultLoaders.babel,
         {
