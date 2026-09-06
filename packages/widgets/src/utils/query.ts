@@ -1,5 +1,14 @@
 import { createCache } from './cache';
 
+function base64UrlEncode (input: string): string {
+  const bytes = new TextEncoder().encode(input);
+  let bin = '';
+  bytes.forEach(b => {
+    bin += String.fromCharCode(b);
+  });
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
 const { getCache, setCache } = createCache('db/sql');
 
 export async function doDbSqlQuery (prop: { sql: string, db: string, force: boolean, use?: string }, signal?: AbortSignal): Promise<any> {
@@ -12,13 +21,18 @@ export async function doDbSqlQuery (prop: { sql: string, db: string, force: bool
     invalidCache = data;
   }
 
-  // Prefer GET: some CDNs (e.g. CloudFront distributions without POST
-  // enabled) reject POST bodies, which would leave every widget empty.
-  const endpoint = `/api/db/${encodeURIComponent(prop.db)}?force=${prop.force}&use=${encodeURIComponent(prop.use ?? '')}&sql=${encodeURIComponent(prop.sql)}`;
-  let res = await fetch(endpoint, { method: 'get', signal });
-  // Retry via POST when the GET route itself is unavailable; a 400 means the
-  // SQL failed to execute, i.e. the GET path worked.
-  if ([403, 404, 405, 422].includes(res.status)) {
+  // Preferred transport: GET with the SQL encoded in the path, which works
+  // even behind CDNs that forbid POST and strip query strings. Falls back to
+  // the plain GET query param, then to the classic POST body.
+  const sqlPath = base64UrlEncode(prop.sql);
+  let res = await fetch(`/api/db/${encodeURIComponent(prop.db)}/q/${sqlPath}`, { method: 'get', signal });
+  if (res.status === 404) {
+    // Older deployment without the path route: try the query-param variant.
+    res = await fetch(`/api/db/${encodeURIComponent(prop.db)}?force=${prop.force}&use=${encodeURIComponent(prop.use ?? '')}&sql=${encodeURIComponent(prop.sql)}`, { method: 'get', signal });
+  }
+  // Retry via POST when the GET transports themselves are unavailable; a 400
+  // means the SQL failed to execute, i.e. the transport worked.
+  if ([403, 405, 422].includes(res.status)) {
     res = await fetch(`/api/db/${prop.db}?force=${prop.force}&use=${prop.use ?? ''}`, {
       method: 'post',
       body: prop.sql,
