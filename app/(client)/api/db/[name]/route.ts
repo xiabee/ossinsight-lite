@@ -8,7 +8,23 @@ import * as process from 'process';
 // TODO: use config
 const db = config.db;
 
+export async function GET (req: NextRequest, { params: { name } }: any) {
+  const sql = new URL(req.url).searchParams.get('sql');
+  if (!sql) {
+    // 422 lets the client distinguish "GET query params were stripped
+    // somewhere along the way" from an SQL execution failure (400).
+    return NextResponse.json({
+      message: 'Missing `sql` query parameter',
+    }, { status: 422 });
+  }
+  return handleDbQuery(req, name, sql);
+}
+
 export async function POST (req: NextRequest, { params: { name } }: any) {
+  return handleDbQuery(req, name, await req.text());
+}
+
+async function handleDbQuery (req: NextRequest, name: string, sql: string) {
   let readonly = req.headers.get('X-Readonly') === 'true';
 
   if (!process.env.TIDB_USER || !process.env.TIDB_HOST || !process.env.TIDB_PASSWORD || !process.env.TIDB_PORT) {
@@ -32,7 +48,6 @@ export async function POST (req: NextRequest, { params: { name } }: any) {
 
   const force = searchParams.get('force');
   const use = searchParams.get('use') ?? '';
-  const sql = await req.text();
   const cacheKey = `${name}:${use}:${sql}`;
 
   const uri = getDatabaseUri(database, readonly, use);
@@ -105,3 +120,5 @@ export async function POST (req: NextRequest, { params: { name } }: any) {
     conn.destroy();
   }
 }
+
+export const dynamic = 'force-dynamic';

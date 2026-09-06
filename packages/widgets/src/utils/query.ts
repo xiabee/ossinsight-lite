@@ -12,11 +12,19 @@ export async function doDbSqlQuery (prop: { sql: string, db: string, force: bool
     invalidCache = data;
   }
 
-  const res = await fetch(`/api/db/${prop.db}?force=${prop.force}&use=${prop.use ?? ''}`, {
-    method: 'post',
-    body: prop.sql,
-    signal,
-  });
+  // Prefer GET: some CDNs (e.g. CloudFront distributions without POST
+  // enabled) reject POST bodies, which would leave every widget empty.
+  const endpoint = `/api/db/${encodeURIComponent(prop.db)}?force=${prop.force}&use=${encodeURIComponent(prop.use ?? '')}&sql=${encodeURIComponent(prop.sql)}`;
+  let res = await fetch(endpoint, { method: 'get', signal });
+  // Retry via POST when the GET route itself is unavailable; a 400 means the
+  // SQL failed to execute, i.e. the GET path worked.
+  if ([403, 404, 405, 422].includes(res.status)) {
+    res = await fetch(`/api/db/${prop.db}?force=${prop.force}&use=${prop.use ?? ''}`, {
+      method: 'post',
+      body: prop.sql,
+      signal,
+    });
+  }
   if (res.ok) {
     const data = await res.json();
     if (isFinite(data.ttl)) {
